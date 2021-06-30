@@ -438,7 +438,6 @@ func (s *Service) newSession(w http.ResponseWriter, r *http.Request, userID stri
 
 			Expires: time.Now().AddDate(0, 1, 0),
 
-			//Domain:   "edgeworx-staging.deviceplane.com",
 			Secure:   secure,
 			HttpOnly: true,
 			SameSite: http.SameSiteNoneMode,
