@@ -1,0 +1,6 @@
+.DS_Store
+bin/
+.vscode/
+go-debug.env
+__debug_bin
+
