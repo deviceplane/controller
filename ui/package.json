@@ -1,0 +1,94 @@
+{
+  "name": "deviceplane",
+  "version": "0.1.0",
+  "private": true,
+  "homepage": "https://deviceplane.com",
+  "dependencies": {
+    "@auth0/auth0-spa-js": "^1.6.4",
+    "@babel/runtime": "^7.8.3",
+    "@blueprintjs/icons": "^3.13.0",
+    "@bugsnag/js": "^6.5.0",
+    "@bugsnag/plugin-react": "^6.5.0",
+    "@types/react": "^16.9.11",
+    "auth0-js": "^9.12.2",
+    "axios": "^0.18.0",
+    "framer-motion": "^1.6.17",
+    "moment": "^2.22.2",
+    "navi": "^0.13.6",
+    "parse-prometheus-text-format": "^1.1.1",
+    "react": "^16.12.0",
+    "react-ace": "^6.2.0",
+    "react-dom": "^16.12.0",
+    "react-helmet-async": "^1.0.4",
+    "react-hook-form": "^4.8.2",
+    "react-navi": "^0.13.6",
+    "react-router-dom": "^5.1.2",
+    "react-select": "3.0.6",
+    "react-spinners": "^0.6.1",
+    "react-spring": "^8.0.27",
+    "react-table": "^7.0.0-rc.5",
+    "ssh2": "^0.5.3",
+    "styled-components": "^5.0.0",
+    "styled-system": "^5.1.2",
+    "title": "^3.4.1",
+    "ts-interface-checker": "^0.1.9",
+    "typescript": "^3.7.4",
+    "websocket-stream": "^5.5.0",
+    "xterm": "^4.4.0",
+    "xterm-addon-fit": "^0.3.0",
+    "xterm-addon-webgl": "^0.5.0",
+    "yup": "^0.27.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.8.3",
+    "@babel/plugin-transform-runtime": "^7.8.3",
+    "@babel/preset-env": "^7.8.3",
+    "@babel/preset-react": "^7.8.3",
+    "autoprefixer": "^9.7.4",
+    "babel-loader": "^8.0.6",
+    "clean-webpack-plugin": "^3.0.0",
+    "compression-webpack-plugin": "^3.1.0",
+    "css-loader": "^3.4.2",
+    "cypress": "^3.6.1",
+    "eslint-plugin-cypress": "^2.7.0",
+    "eslint-plugin-prettier": "^3.1.1",
+    "file-loader": "^5.0.2",
+    "html-webpack-plugin": "^3.2.0",
+    "husky": "^3.1.0",
+    "path": "^0.12.7",
+    "postcss-loader": "^3.0.0",
+    "prettier": "1.19.1",
+    "pretty-quick": "^2.0.1",
+    "style-loader": "^1.1.2",
+    "terser-webpack-plugin": "^2.3.2",
+    "ts-interface-builder": "^0.2.1",
+    "webpack": "^4.41.5",
+    "webpack-bundle-analyzer": "^3.6.0",
+    "webpack-cli": "^3.3.10",
+    "webpack-dev-server": "^3.10.1"
+  },
+  "scripts": {
+    "start": "webpack-dev-server",
+    "build": "webpack -p",
+    "test": "cypress run",
+    "test:open": "cypress open",
+    "generate": "rm src/components/*-ti.ts && `npm bin`/ts-interface-builder src/components/*.ts*"
+  },
+  "browserslist": [
+    ">0.2%",
+    "not dead",
+    "not ie <= 11",
+    "not op_mini all"
+  ],
+  "husky": {
+    "hooks": {
+      "pre-commit": "pretty-quick --staged"
+    }
+  },
+  "engines": {
+    "node": "10.x"
+  },
+  "volta": {
+    "node": "10.19.0"
+  }
+}
