@@ -82,7 +82,7 @@ const deleteInternalUser = `
 
 // Index: primary key
 const getInternalUser = `
-  select id, email from internal_users
+  select id, email, password_hash from internal_users
   where id = ?
 `
 
