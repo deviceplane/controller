@@ -165,6 +165,7 @@ func NewService(
 
 	apiRouter.HandleFunc("/me", s.getMe).Methods("GET")
 	apiRouter.HandleFunc("/me", s.updateMe).Methods("PATCH")
+	apiRouter.HandleFunc("/me", s.deleteMe).Methods("DELETE")
 
 	apiRouter.HandleFunc("/memberships", s.listMembershipsByUser).Methods("GET")
 

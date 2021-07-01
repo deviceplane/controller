@@ -16,6 +16,13 @@ const getUser = `
 `
 
 // Index: internal_user_id_unique
+const deleteUserByInternalID = `
+  delete from users
+  where internal_user_id = ?
+  limit 1
+`
+
+// Index: internal_user_id_unique
 const getUserByInternalID = `
   select id, created_at, internal_user_id, external_user_id, name, super_admin from users
   where internal_user_id = ?
@@ -67,6 +74,13 @@ const createInternalUser = `
 `
 
 // Index: primary key
+const deleteInternalUser = `
+  delete from internal_users
+  where id = ?
+  limit 1
+`
+
+// Index: primary key
 const getInternalUser = `
   select id, email from internal_users
   where id = ?
@@ -74,7 +88,7 @@ const getInternalUser = `
 
 // Index: email
 const lookupInternalUser = `
-  select id, email from internal_users
+  select id, email, password_hash from internal_users
   where email = ?
 `
 

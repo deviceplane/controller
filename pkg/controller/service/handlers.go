@@ -53,6 +53,47 @@ func (s *Service) intentional500(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// TODO: Impl for external users also
+func (s *Service) deleteMe(w http.ResponseWriter, r *http.Request) {
+	utils.WithReferrer(w, r, func(referrer *url.URL) {
+		var deleteRequest struct {
+			Email    string `json:"email" validate:"email"`
+			Password string `json:"password" validate:"password"`
+		}
+		if err := read(r, &deleteRequest); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		// Find the user
+		internalUser, err := s.internalUsers.LookupInternalUser(r.Context(), deleteRequest.Email)
+		if err != nil {
+			log.WithError(err).Error("lookup internal user on deleteInternalUser")
+			code := http.StatusInternalServerError
+			if err == store.ErrUserNotFound {
+				code = http.StatusNotFound
+			}
+			http.Error(w, err.Error(), code)
+			return
+		}
+		// Compare PWs
+		if hash.Hash(deleteRequest.Password) != internalUser.PasswordHash {
+			http.Error(w, "incorrect password", http.StatusUnauthorized)
+			return
+		}
+		// Delete the user
+		if err := s.internalUsers.DeleteInternalUser(r.Context(), internalUser.ID); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if err := s.users.DeleteUserByInternalID(r.Context(), internalUser.ID); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		// Success
+		w.WriteHeader(200)
+	})
+}
+
 func (s *Service) registerInternalUser(w http.ResponseWriter, r *http.Request) {
 	utils.WithReferrer(w, r, func(referrer *url.URL) {
 		var registerRequest struct {

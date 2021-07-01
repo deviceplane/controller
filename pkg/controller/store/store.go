@@ -10,6 +10,7 @@ import (
 type Users interface {
 	InitializeUser(ctx context.Context, internalUserID, externalUserID *string) (*models.User, error)
 	GetUser(ctx context.Context, id string) (*models.User, error)
+	DeleteUserByInternalID(ctx context.Context, id string) error
 	GetUserByInternalID(ctx context.Context, internalUserID string) (*models.User, error)
 	GetUserByExternalID(ctx context.Context, externalUserID string) (*models.User, error)
 	UpdateUserName(ctx context.Context, id, name string) (*models.User, error)
@@ -19,6 +20,7 @@ type InternalUsers interface {
 	CreateInternalUser(ctx context.Context, email, passwordHash string) (*models.InternalUser, error)
 	GetInternalUser(ctx context.Context, id string) (*models.InternalUser, error)
 	LookupInternalUser(ctx context.Context, email string) (*models.InternalUser, error)
+	DeleteInternalUser(ctx context.Context, id string) error
 	ValidateInternalUser(ctx context.Context, id, passwordHash string) (*models.InternalUser, error)
 	ValidateInternalUserWithEmail(ctx context.Context, email, passwordHash string) (*models.InternalUser, error)
 	UpdateInternalUserPasswordHash(ctx context.Context, id, passwordHash string) (*models.InternalUser, error)

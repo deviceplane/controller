@@ -174,6 +174,15 @@ func (s *Store) GetUser(ctx context.Context, id string) (*models.User, error) {
 	return user, nil
 }
 
+func (s *Store) DeleteUserByInternalID(ctx context.Context, internalUserID string) error {
+	_, err := s.db.ExecContext(
+		ctx,
+		deleteUserByInternalID,
+		internalUserID,
+	)
+	return err
+}
+
 func (s *Store) GetUserByInternalID(ctx context.Context, internalUserID string) (*models.User, error) {
 	userRow := s.db.QueryRowContext(ctx, getUserByInternalID, internalUserID)
 
@@ -302,6 +311,15 @@ func (s *Store) LookupInternalUser(ctx context.Context, email string) (*models.I
 	}
 
 	return user, nil
+}
+
+func (s *Store) DeleteInternalUser(ctx context.Context, id string) error {
+	_, err := s.db.ExecContext(
+		ctx,
+		deleteInternalUser,
+		id,
+	)
+	return err
 }
 
 func (s *Store) ValidateInternalUser(ctx context.Context, id, passwordHash string) (*models.InternalUser, error) {
