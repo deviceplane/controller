@@ -381,6 +381,7 @@ func (s *Store) scanInternalUser(scanner scanner) (*models.InternalUser, error) 
 	if err := scanner.Scan(
 		&user.ID,
 		&user.Email,
+		&user.PasswordHash,
 	); err != nil {
 		return nil, err
 	}
