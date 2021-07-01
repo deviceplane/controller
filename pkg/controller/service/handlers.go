@@ -64,20 +64,15 @@ func (s *Service) deleteMe(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		// Find the user
-		internalUser, err := s.internalUsers.LookupInternalUser(r.Context(), deleteRequest.Email)
+		// Compare PWs
+		internalUser, err := s.internalUsers.ValidateInternalUserWithEmail(r.Context(), deleteRequest.Email, hash.Hash(deleteRequest.Password))
 		if err != nil {
-			log.WithError(err).Error("lookup internal user on deleteInternalUser")
-			code := http.StatusInternalServerError
+			log.WithError(err).Error("validate internal user on deleteInternalUser")
+			code := http.StatusUnauthorized
 			if err == store.ErrUserNotFound {
 				code = http.StatusNotFound
 			}
-			http.Error(w, err.Error(), code)
-			return
-		}
-		// Compare PWs
-		if hash.Hash(deleteRequest.Password) != internalUser.PasswordHash {
-			http.Error(w, "incorrect password", http.StatusUnauthorized)
+			http.Error(w, "user credentials", code)
 			return
 		}
 		// Delete the user

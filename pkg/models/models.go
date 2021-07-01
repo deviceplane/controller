@@ -29,9 +29,8 @@ type ExternalUser struct {
 }
 
 type InternalUser struct {
-	ID           string
-	Email        string
-	PasswordHash string
+	ID    string
+	Email string
 }
 
 type RegistrationToken struct {
