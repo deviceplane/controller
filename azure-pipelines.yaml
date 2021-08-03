@@ -18,74 +18,131 @@ variables:
   branch: $(Build.SourceBranchName)
   isTaggedCommit: "no"
   version:
+  dp.cli.version: "3.0.0"
+  dp.agent.version: "1.18.0"
 
-jobs:
-  - job: Images
-    pool:
-      vmImage: "Ubuntu-18.04"
+stages:
+  - stage: Publish
+    jobs:
+    - job: Images
+      pool:
+        vmImage: "Ubuntu-18.04"
 
-    steps:
+      steps:
+        - script: |
+            VERS=$(echo $(commit) | cut -c1-20)
+            if [[ $(ref) == refs/tags* ]]; then
+              VERS=$(echo $(ref) | sed "s|refs/tags/v||g")
+              echo "##vso[task.setvariable variable=isTaggedCommit]yes"
+            fi
+            echo "##vso[task.setvariable variable=version]$VERS"
+            echo "Version: $VERS"
+          displayName: "Set variables"
+
+        - task: Docker@2
+          displayName: "Build develop"
+          inputs:
+            command: "build"
+            Dockerfile: "./Dockerfile"
+            buildContext: "./"
+            repository: gcr.io/focal-freedom-236620/deviceplane-controller
+            tags: |
+              $(version)
+              latest
+        - task: Docker@2
+          displayName: "Push develop"
+          inputs:
+            containerRegistry: "Edgeworx GCP"
+            repository: focal-freedom-236620/deviceplane-controller
+            command: "push"
+            Dockerfile: "./Dockerfile"
+            buildContext: "./"
+            tags: |
+              $(version)
+              latest
+
+        - task: Docker@2
+          condition: eq(variables.isTaggedCommit, 'yes')
+          displayName: "Build release"
+          inputs:
+            command: "build"
+            Dockerfile: "./Dockerfile"
+            buildContext: "./"
+            repository: docker.io/edgeworx/deviceplane-controller
+            tags: |
+              $(version)
+              latest
+        - task: Docker@2
+          condition: eq(variables.isTaggedCommit, 'yes')
+          displayName: "Push release"
+          inputs:
+            containerRegistry: Edgeworx-Dockerhub
+            repository: edgeworx/deviceplane-controller
+            command: "push"
+            Dockerfile: "./Dockerfile"
+            buildContext: "./"
+            tags: |
+              $(version)
+              latest
+  
+        - task: Kubernetes@1
+          displayName: Deploy to dev cluster
+          inputs:
+            connectionType: Kubernetes Service Connection
+            kubernetesServiceEndpoint: EdgeworxDevelopment
+            command: set
+            namespace: deviceplane
+            arguments: image deployment/deviceplane controller=gcr.io/focal-freedom-236620/deviceplane-controller:$(version)
+
+  - stage: Test
+    jobs:
+    - job: Test
+      pool:
+        vmImage: 'Ubuntu-18.04'
+
+      steps:
+      - checkout: self
+        submodules: true
+
       - script: |
+          set -e
           VERS=$(echo $(commit) | cut -c1-20)
           if [[ $(ref) == refs/tags* ]]; then
             VERS=$(echo $(ref) | sed "s|refs/tags/v||g")
-            echo "##vso[task.setvariable variable=isTaggedCommit]yes"
           fi
           echo "##vso[task.setvariable variable=version]$VERS"
           echo "Version: $VERS"
-        displayName: "Set variables"
+        displayName: 'Set git/version variables'
 
-      - task: Docker@2
-        displayName: "Build develop"
-        inputs:
-          command: "build"
-          Dockerfile: "./Dockerfile"
-          buildContext: "./"
-          repository: gcr.io/focal-freedom-236620/deviceplane-controller
-          tags: |
-            $(version)
-            latest
-      - task: Docker@2
-        displayName: "Push develop"
-        inputs:
-          containerRegistry: "Edgeworx GCP"
-          repository: focal-freedom-236620/deviceplane-controller
-          command: "push"
-          Dockerfile: "./Dockerfile"
-          buildContext: "./"
-          tags: |
-            $(version)
-            latest
+      - bash: |
+          set -e
+          ./bootstrap.bash
+        displayName: 'Bootstrap'
+        workingDirectory: $(System.DefaultWorkingDirectory)/tests
 
-      - task: Docker@2
-        condition: eq(variables.isTaggedCommit, 'yes')
-        displayName: "Build release"
-        inputs:
-          command: "build"
-          Dockerfile: "./Dockerfile"
-          buildContext: "./"
-          repository: docker.io/edgeworx/deviceplane-controller
-          tags: |
-            $(version)
-            latest
-      - task: Docker@2
-        condition: eq(variables.isTaggedCommit, 'yes')
-        displayName: "Push release"
-        inputs:
-          containerRegistry: Edgeworx-Dockerhub
-          repository: edgeworx/deviceplane-controller
-          command: "push"
-          Dockerfile: "./Dockerfile"
-          buildContext: "./"
-          tags: |
-            $(version)
-            latest
+      - bash: |
+          set -e
+          cp ./env.sh ./conf/env.sh
+          sed -i "s|TT_CLI_VERSION=.*|TT_CLI_VERSION=\"$(dp.cli.version)\"|g" ./conf/env.sh
+          ./run.bash install_cli
+        displayName: 'Test: install cli'
+        workingDirectory: $(System.DefaultWorkingDirectory)/tests
 
-      - task: Kubernetes@1
-        displayName: Deploy to dev cluster
-        inputs:
-          connectionType: Kubernetes Service Connection
-          kubernetesServiceEndpoint: EdgeworxDevelopment
-          command: set
-          namespace: deviceplane
-          arguments: image deployment/deviceplane controller=gcr.io/focal-freedom-236620/deviceplane-controller:$(version)
+      - bash: |
+          set -e
+          cp ./env.sh ./conf/env.sh
+          sed -i "s|TT_AGENT_VERSION=.*|TT_AGENT_VERSION=\"$(dp.agent.version)\"|g" ./conf/env.sh
+          sed -i "s|TT_REGISTRATION_TOKEN=.*|TT_REGISTRATION_TOKEN=\"$(agent.registration_token)\"|g" ./conf/env.sh
+          sed -i "s|TT_PROJECT=.*|TT_PROJECT=\"$(project)\"|g" ./conf/env.sh
+          ./run.bash install_agent
+        displayName: 'Test: install agent'
+        workingDirectory: $(System.DefaultWorkingDirectory)/tests
+
+      - bash: |
+          set -e
+          cp ./env.sh ./conf/env.sh
+          sed -i "s|TT_PROJECT=.*|TT_PROJECT=\"$(project)\"|g" ./conf/env.sh
+          sed -i "s|TT_ACCESS_KEY=.*|TT_ACCESS_KEY=\"$(cli.access_key)\"|g" ./conf/env.sh
+          ./run.bash ssh
+        displayName: 'Test: ssh'
+        workingDirectory: $(System.DefaultWorkingDirectory)/tests
