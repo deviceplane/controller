@@ -3113,7 +3113,7 @@ func (s *Service) registerDevice(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if devicesRegisteredCount.AllCount >= *deviceRegistrationToken.MaxRegistrations {
-			log.WithError(err).Error("device allocation limit reached")
+			log.Errorf("device allocation limit reached (%d)", devicesRegisteredCount.AllCount)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
