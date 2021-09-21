@@ -289,9 +289,12 @@ func (s *Service) withUserOrServiceAccountAuth(w http.ResponseWriter, r *http.Re
 	case http.ErrNoCookie:
 		accessKeyValue, _, _ := r.BasicAuth()
 		if accessKeyValue == "" {
-			println("empty access key")
-			w.WriteHeader(http.StatusUnauthorized)
-			return
+			accessKeyValue = r.URL.Query().Get("accessKey")
+			if accessKeyValue == "" {
+				println("empty access key")
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
 		}
 
 		if strings.HasPrefix(accessKeyValue, "u") {
