@@ -264,73 +264,88 @@ func (s *Service) withRole(w http.ResponseWriter, r *http.Request, project *mode
 	f(role)
 }
 
-func (s *Service) withUserOrServiceAccountAuth(w http.ResponseWriter, r *http.Request, f func(user *models.User, serviceAccount *models.ServiceAccount)) {
-	var userID string
-	var serviceAccountAccessKey *models.ServiceAccountAccessKey
+func (s *Service) processAccessKey(accessKeyValue string, w http.ResponseWriter, r *http.Request) (userID string, serviceAccountAccessKey *models.ServiceAccountAccessKey) {
+	if accessKeyValue == "" {
+		println("empty access key")
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
 
-	sessionValue, err := r.Cookie(sessionCookie)
-
-	switch err {
-	case nil:
-		println("session value " + sessionValue.Value)
-		session, err := s.sessions.ValidateSession(r.Context(), hash.Hash(sessionValue.Value))
-		if err == store.ErrSessionNotFound {
-			println("session not found")
+	if strings.HasPrefix(accessKeyValue, "u") {
+		userAccessKey, err := s.userAccessKeys.ValidateUserAccessKey(r.Context(), hash.Hash(accessKeyValue))
+		if err == store.ErrUserAccessKeyNotFound {
+			println("access key not found from " + accessKeyValue)
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		} else if err != nil {
-			println("validate session error " + err.Error())
-			log.WithError(err).Error("validate session")
+			println("access key invalid " + err.Error())
+			log.WithError(err).Error("validate user access key")
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		userID = session.UserID
-	case http.ErrNoCookie:
-		accessKeyValue, _, _ := r.BasicAuth()
-		if accessKeyValue == "" {
-			accessKeyValue = r.URL.Query().Get("accessKey")
-			if accessKeyValue == "" {
-				println("empty access key")
-				w.WriteHeader(http.StatusUnauthorized)
-				return
-			}
+		userID = userAccessKey.UserID
+	} else if strings.HasPrefix(accessKeyValue, "s") {
+		var err error
+		serviceAccountAccessKey, err = s.serviceAccountAccessKeys.ValidateServiceAccountAccessKey(r.Context(), hash.Hash(accessKeyValue))
+		if err == store.ErrServiceAccountAccessKeyNotFound {
+			println("svc acc key not found from " + accessKeyValue)
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		} else if err != nil {
+			println("svc acc key invalid " + err.Error())
+			log.WithError(err).Error("validate service account access key")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
 		}
+	} else {
+		println("unauthorized")
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	return
+}
 
-		if strings.HasPrefix(accessKeyValue, "u") {
-			userAccessKey, err := s.userAccessKeys.ValidateUserAccessKey(r.Context(), hash.Hash(accessKeyValue))
-			if err == store.ErrUserAccessKeyNotFound {
-				println("access key not found from " + accessKeyValue)
+func (s *Service) withUserOrServiceAccountAuth(w http.ResponseWriter, r *http.Request, f func(user *models.User, serviceAccount *models.ServiceAccount)) {
+	var userID string
+	var serviceAccountAccessKey *models.ServiceAccountAccessKey
+
+	// Query param takes precedence on cookie or basic auth
+	accessKeyValue := r.URL.Query().Get("accessKey")
+	if accessKeyValue != "" {
+		userID, serviceAccountAccessKey = s.processAccessKey(accessKeyValue, w, r)
+		if userID == "" && serviceAccountAccessKey == nil {
+			return
+		}
+	} else {
+		sessionValue, err := r.Cookie(sessionCookie)
+
+		switch err {
+		case nil:
+			println("session value " + sessionValue.Value)
+			session, err := s.sessions.ValidateSession(r.Context(), hash.Hash(sessionValue.Value))
+			if err == store.ErrSessionNotFound {
+				println("session not found")
 				w.WriteHeader(http.StatusUnauthorized)
 				return
 			} else if err != nil {
-				println("access key invalid " + err.Error())
-				log.WithError(err).Error("validate user access key")
+				println("validate session error " + err.Error())
+				log.WithError(err).Error("validate session")
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 
-			userID = userAccessKey.UserID
-		} else if strings.HasPrefix(accessKeyValue, "s") {
-			serviceAccountAccessKey, err = s.serviceAccountAccessKeys.ValidateServiceAccountAccessKey(r.Context(), hash.Hash(accessKeyValue))
-			if err == store.ErrServiceAccountAccessKeyNotFound {
-				println("svc acc key not found from " + accessKeyValue)
-				w.WriteHeader(http.StatusUnauthorized)
-				return
-			} else if err != nil {
-				println("svc acc key invalid " + err.Error())
-				log.WithError(err).Error("validate service account access key")
-				w.WriteHeader(http.StatusInternalServerError)
+			userID = session.UserID
+		case http.ErrNoCookie:
+			accessKeyValue, _, _ = r.BasicAuth()
+			userID, serviceAccountAccessKey = s.processAccessKey(accessKeyValue, w, r)
+			if userID == "" && serviceAccountAccessKey == nil {
 				return
 			}
-		} else {
-			println("unauthorized")
+		default:
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
-	default:
-		w.WriteHeader(http.StatusUnauthorized)
-		return
 	}
 
 	if userID == "" && serviceAccountAccessKey == nil {
