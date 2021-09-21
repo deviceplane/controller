@@ -278,6 +278,7 @@ func (s *Service) withUserOrServiceAccountAuth(w http.ResponseWriter, r *http.Re
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		} else if err != nil {
+			println("validate session error " + err.Error())
 			log.WithError(err).Error("validate session")
 			w.WriteHeader(http.StatusInternalServerError)
 			return
@@ -287,6 +288,7 @@ func (s *Service) withUserOrServiceAccountAuth(w http.ResponseWriter, r *http.Re
 	case http.ErrNoCookie:
 		accessKeyValue, _, _ := r.BasicAuth()
 		if accessKeyValue == "" {
+			println("empty access key")
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
@@ -294,9 +296,11 @@ func (s *Service) withUserOrServiceAccountAuth(w http.ResponseWriter, r *http.Re
 		if strings.HasPrefix(accessKeyValue, "u") {
 			userAccessKey, err := s.userAccessKeys.ValidateUserAccessKey(r.Context(), hash.Hash(accessKeyValue))
 			if err == store.ErrUserAccessKeyNotFound {
+				println("access key not found from " + accessKeyValue)
 				w.WriteHeader(http.StatusUnauthorized)
 				return
 			} else if err != nil {
+				println("access key invalid " + err.Error())
 				log.WithError(err).Error("validate user access key")
 				w.WriteHeader(http.StatusInternalServerError)
 				return
@@ -306,14 +310,17 @@ func (s *Service) withUserOrServiceAccountAuth(w http.ResponseWriter, r *http.Re
 		} else if strings.HasPrefix(accessKeyValue, "s") {
 			serviceAccountAccessKey, err = s.serviceAccountAccessKeys.ValidateServiceAccountAccessKey(r.Context(), hash.Hash(accessKeyValue))
 			if err == store.ErrServiceAccountAccessKeyNotFound {
+				println("svc acc key not found from " + accessKeyValue)
 				w.WriteHeader(http.StatusUnauthorized)
 				return
 			} else if err != nil {
+				println("svc acc key invalid " + err.Error())
 				log.WithError(err).Error("validate service account access key")
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 		} else {
+			println("unauthorized")
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
