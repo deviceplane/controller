@@ -28,21 +28,21 @@ make build DEBUG=1
 
 ```
 bin/controller --addr :80
-         --mysql ""
-         --email-provider smtp
-         --email-from-address noreply@deviceplane.com
-         --smtp-server smtp.sendgrid.net
-         --smtp-port "465"
-         --smtp-username apikey
-         --smtp-password "..."
-         --auth0-audience "..."
-         --auth0-domain "..."
-         --db-max-open-conns "5"
-         --db-max-idle-conns "5"
-         --db-max-conn-lifetime 5m
-         --allowed-origin https://cloud.dev.edgeworx.io
-         --allowed-origin http://localhost:3000
-         --allowed-origin https://localhost:3000
+	       --mysql "..."
+	       --email-provider smtp
+	       --email-from-address noreply@deviceplane.com
+	       --smtp-server smtp.sendgrid.net
+	       --smtp-port "465"
+	       --smtp-username apikey
+	       --smtp-password "..."
+	       --auth0-audience "..."
+	       --auth0-domain "..."
+	       --db-max-open-conns "5"
+	       --db-max-idle-conns "5"
+	       --db-max-conn-lifetime 5m
+	       --allowed-origin https://cloud.dev.edgeworx.io
+	       --allowed-origin http://localhost:3000
+	       --allowed-origin https://localhost:3000
 ```
 
 #### Run the binary as intercept to Kubernetes pod
